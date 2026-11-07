@@ -62,6 +62,8 @@ final class Config {
     final List<String> hiddenApps;
     /** Packages pre-seeded into the App library's "added" set (config.xml, library_apps); empty by default. */
     final List<String> libraryApps;
+    /** Apps protected by parental PIN (config.xml, pin_protected_apps). */
+    final Set<String> pinProtectedApps;
     final String liveTvPackage;
     final String liveTvAction;
     final String liveTvInputId;
@@ -156,6 +158,8 @@ final class Config {
     /** Rotating theme images, or the single wallpaper when no collection is configured. */
     final List<File> wallpapers;
     final int wallpaperRotationMinutes;
+    final int wallpaperRotationSeconds;
+    final long wallpaperRotationIntervalMs;
     final int wallpaperDim;
     /** The dock band's opacity in percent (config.json dock_opacity, 30-100): below 100 the wallpaper shows through. */
     final int dockOpacity;
@@ -207,7 +211,8 @@ final class Config {
     /** Hold OK on a tile opens a menu (Move, Remove from Home, App info) instead of App info (config.xml / theme tile_menu). */
     final boolean tileMenu;
 
-    private Config(List<String> dockApps, boolean fillDock, List<String> hiddenApps, List<String> libraryApps, String liveTvPackage,
+    private Config(List<String> dockApps, boolean fillDock, List<String> hiddenApps, List<String> libraryApps,
+                   Set<String> pinProtectedApps, String liveTvPackage,
                    String liveTvAction, String liveTvInputId, Map<String, String> launchActions, Map<String, String> appLabels,
                    Map<String, String> appBanners, String sourcePanelService, String sourcePanelAction,
                    String sourcePanelExtra, boolean coocaaSources, String inputAction,
@@ -215,7 +220,7 @@ final class Config {
                    boolean shamsiDate, String greetingName, boolean moduleCards, boolean reducedMotion, boolean bootToLiveTv, boolean dockTitle, boolean dockRow, boolean topMenu, boolean launcherSettingsButton, boolean reorderButton, boolean showNetworkPill, boolean showInputsPill, boolean iconOnlyButtons, boolean iconOnlyInputs, boolean libraryButton, int wifiLabelWidth, boolean alwaysShowNames, boolean wallpaperTrueColor, boolean focusOvershoot, String vpnApp,
                    boolean showHomeSettingsShortcut, boolean showStats, boolean appLibrary, boolean appLibrarySelection, int backgroundColor, int skyIntensity,
                    int[] settingsKeycodes, boolean settingsKeyPanel, boolean restoreKeyServices, boolean wallpaperEnabled, File wallpaper, List<File> wallpapers,
-                   int wallpaperRotationMinutes, int wallpaperDim, int dockOpacity, String wallpaperOrder, boolean overlayApplied,
+                   int wallpaperRotationMinutes, int wallpaperRotationSeconds, int wallpaperDim, int dockOpacity, String wallpaperOrder, boolean overlayApplied,
                    Festival festival, int[] inputKeycodes, List<String> appKeys, String stockHomeRedirect,
                    List<RaceWeekend.Race> raceCalendar, boolean cinematicHome, boolean ambientGlow, boolean appGlow, boolean fadeRows, int homeIdleClockMinutes,
                    boolean keyFilter, boolean dockGlass, String glowStyle, boolean wallpaperCaptions,
@@ -231,6 +236,7 @@ final class Config {
         this.fillDock = fillDock;
         this.hiddenApps = Collections.unmodifiableList(hiddenApps);
         this.libraryApps = Collections.unmodifiableList(libraryApps);
+        this.pinProtectedApps = Collections.unmodifiableSet(new HashSet<>(pinProtectedApps));
         this.liveTvPackage = liveTvPackage;
         this.liveTvAction = liveTvAction;
         this.liveTvInputId = liveTvInputId;
@@ -280,6 +286,10 @@ final class Config {
         this.wallpaper = wallpaper;
         this.wallpapers = Collections.unmodifiableList(wallpapers);
         this.wallpaperRotationMinutes = wallpaperRotationMinutes;
+        this.wallpaperRotationSeconds = wallpaperRotationSeconds;
+        this.wallpaperRotationIntervalMs = wallpaperRotationSeconds > 0
+                ? (wallpaperRotationSeconds * 1000L)
+                : (wallpaperRotationMinutes * 60_000L);
         this.wallpaperDim = wallpaperDim;
         this.dockOpacity = dockOpacity;
         this.wallpaperOrder = wallpaperOrder;
@@ -320,6 +330,7 @@ final class Config {
         boolean fillDock = res.getBoolean(R.bool.fill_dock);
         List<String> hidden = new ArrayList<>(Arrays.asList(res.getStringArray(R.array.hidden_apps)));
         List<String> libraryApps = new ArrayList<>(Arrays.asList(res.getStringArray(R.array.library_apps)));
+        List<String> pinApps = new ArrayList<>(Arrays.asList(res.getStringArray(R.array.pin_protected_apps)));
         String liveTv = res.getString(R.string.live_tv_package).trim();
         String liveTvAction = res.getString(R.string.live_tv_action).trim();
         String liveTvInputId = res.getString(R.string.live_tv_input_id).trim();
@@ -399,6 +410,7 @@ final class Config {
             fillDock = bool(json, "fill_dock", fillDock);
             hidden = stringList(json, "hidden_apps", hidden);
             libraryApps = stringList(json, "library_apps", libraryApps);
+            pinApps = stringList(json, "pin_protected_apps", pinApps);
             liveTv = string(json, "live_tv_package", liveTv);
             liveTvAction = string(json, "live_tv_action", liveTvAction);
             liveTvInputId = string(json, "live_tv_input_id", liveTvInputId);
@@ -485,6 +497,7 @@ final class Config {
         boolean wallpaperEnabled = json == null || bool(json, "wallpaper", true);
         if (!wallpaperEnabled) wallpaper = null;
         int rotationMinutes = json == null ? 0 : integer(json, "wallpaper_rotation_minutes", 0, 0, 1440);
+        int rotationSeconds = json == null ? 0 : integer(json, "wallpaper_rotation_seconds", 0, 0, 86400);
         int wallpaperDim = json == null ? 0 : integer(json, "wallpaper_dim", 0, 0, 90);
         int dockOpacity = json == null ? 100 : integer(json, "dock_opacity", 100, 30, 100);
         dockOpacity = chosenDockOpacity(choices.getInt(DOCK_OPACITY_KEY, -1), dockOpacity);
@@ -493,7 +506,7 @@ final class Config {
         // An unknown order must not silently change how an existing collection rotates.
         if (!WallpaperRotation.validOrder(wallpaperOrder)) wallpaperOrder = WallpaperRotation.ORDER_SHUFFLE;
         List<File> wallpapers = new ArrayList<>();
-        if (rotationMinutes > 0 && dir != null && wallpaperEnabled) {
+        if ((rotationMinutes > 0 || rotationSeconds > 0) && dir != null && wallpaperEnabled) {
             wallpapers.addAll(WallpaperRotation.images(new File(dir, "wallpapers")));
         }
         if (wallpapers.isEmpty() && wallpaper != null) wallpapers.add(wallpaper);
@@ -512,13 +525,13 @@ final class Config {
         Festival festival = json == null ? Festival.NONE : Festival.parse(string(json, "festival", ""),
                 string(json, "festival_until", ""), string(json, "greeting", ""), string(json, "accent_color", ""));
 
-        return new Config(dock, fillDock, hidden, libraryApps, liveTv, liveTvAction, liveTvInputId, packageMap(launchActions), packageMap(appLabels),
+        return new Config(dock, fillDock, hidden, libraryApps, new HashSet<>(pinApps), liveTv, liveTvAction, liveTvInputId, packageMap(launchActions), packageMap(appLabels),
                 packageMap(appBanners), panelService,
                 panelAction, panelExtra, coocaaSources, inputAction, inputUriScheme,
                 Math.max(1, columns), Math.max(0, rowsBelow), animations, advancedEffects,
                 shamsi, greetingName, moduleCards, reducedMotion, bootToLiveTv, dockTitle, dockRow, topMenu, launcherSettingsButton, reorderButton, showNetworkPill, showInputsPill, iconOnlyButtons, iconOnlyInputs, libraryButton, wifiLabelWidth, alwaysShowNames, wallpaperTrueColor, focusOvershoot, vpn, homeSettings, showStats, library, librarySelection, background,
                 Math.max(0, Math.min(100, skyIntensity)), settingsKeycodes, settingsKeyPanel, restoreKeyServices, wallpaperEnabled, wallpaper,
-                wallpapers, rotationMinutes, wallpaperDim, dockOpacity, wallpaperOrder, applied,
+                wallpapers, rotationMinutes, rotationSeconds, wallpaperDim, dockOpacity, wallpaperOrder, applied,
                 festival, inputKeycodes, appKeys, stockHomeRedirect, json == null ? Collections.emptyList() : raceCalendar(json), cinematic, ambientGlow, appGlow, fadeRows,
                 Math.max(0, idleClockMinutes), keyFilter, dockGlass, glowStyle, wallpaperCaptions, handleViewInputs, tileMenu, dockEvenPadding, cinematicDots, cinematicWhiteFocus, wifiStatusColor, cinematicScrim, cinematicArt, wallpaperMoods, gamepadPassthrough);
     }

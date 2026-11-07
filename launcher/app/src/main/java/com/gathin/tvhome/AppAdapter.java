@@ -208,6 +208,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private final boolean tileMenu;
     /** Tile names and bundled banners that replace the app's own (config.xml, app_labels and app_banners). */
     private final Map<String, String> appLabels, appBanners;
+    private final Set<String> pinProtectedApps;
     private final List<Entry> items = new ArrayList<>();
 
     AppAdapter(Context ctx, TileListener listener, int dockSize, Config cfg) {
@@ -233,6 +234,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         this.tileMenu = cfg.tileMenu;
         this.appLabels = cfg.appLabels;
         this.appBanners = cfg.appBanners;
+        this.pinProtectedApps = cfg.pinProtectedApps;
         // Tiles keep their identity across reload(), so a focused tile stays on its app instead of
         // its view being rebound to whatever app now sits in that slot.
         setHasStableIds(true);
@@ -474,6 +476,16 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             return;
         }
+        if (PinManager.isProtected(pinProtectedApps, e.pkg)) {
+            if (ctx instanceof Activity) {
+                PinDialog.show((Activity) ctx, e.label, () -> doActualLaunch(e));
+                return;
+            }
+        }
+        doActualLaunch(e);
+    }
+
+    private void doActualLaunch(Entry e) {
         Intent i = new Intent(Intent.ACTION_MAIN)
                 .setComponent(e.component)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);

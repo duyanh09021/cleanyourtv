@@ -145,4 +145,10 @@
     <!-- Cinematic top shelf (cinematic_home): the line under the focused dock app's name; %1$s is when it was
          last opened, e.g. "5 minutes ago" or "yesterday, 9:40 pm". -->
     <string name="last_opened">Last opened %1$s</string>
+
+    <!-- Parental PIN Lock strings -->
+    <string name="pin_lock_title">Khóa Phụ Huynh</string>
+    <string name="pin_lock_subtitle">Nhập mã PIN để mở %1$s</string>
+    <string name="pin_error">Mã PIN không đúng, vui lòng thử lại</string>
 </resources>
+

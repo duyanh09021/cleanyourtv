@@ -1,0 +1,321 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/pin_panel"
+    android:layout_width="380dp"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/glass_panel"
+    android:paddingStart="28dp"
+    android:paddingEnd="28dp"
+    android:paddingTop="26dp"
+    android:paddingBottom="24dp"
+    android:gravity="center_horizontal"
+    android:elevation="16dp">
+
+    <!-- Header / Title -->
+    <TextView
+        android:id="@+id/pin_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/pin_lock_title"
+        android:textColor="#FFFFFFFF"
+        android:textSize="22sp"
+        android:fontFamily="@string/font_medium"
+        android:letterSpacing="-0.01" />
+
+    <TextView
+        android:id="@+id/pin_subtitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:textColor="#B3FFFFFF"
+        android:textSize="14sp"
+        android:fontFamily="@string/font_body"
+        android:gravity="center" />
+
+    <!-- 6 PIN Dots (Masked indicators) -->
+    <LinearLayout
+        android:id="@+id/dots_container"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:layout_marginBottom="8dp"
+        android:orientation="horizontal"
+        android:gravity="center">
+
+        <ImageView
+            android:id="@+id/dot_0"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_margin="7dp"
+            android:src="@drawable/pin_dot_empty"
+            android:contentDescription="@null" />
+
+        <ImageView
+            android:id="@+id/dot_1"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_margin="7dp"
+            android:src="@drawable/pin_dot_empty"
+            android:contentDescription="@null" />
+
+        <ImageView
+            android:id="@+id/dot_2"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_margin="7dp"
+            android:src="@drawable/pin_dot_empty"
+            android:contentDescription="@null" />
+
+        <ImageView
+            android:id="@+id/dot_3"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_margin="7dp"
+            android:src="@drawable/pin_dot_empty"
+            android:contentDescription="@null" />
+
+        <ImageView
+            android:id="@+id/dot_4"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_margin="7dp"
+            android:src="@drawable/pin_dot_empty"
+            android:contentDescription="@null" />
+
+        <ImageView
+            android:id="@+id/dot_5"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_margin="7dp"
+            android:src="@drawable/pin_dot_empty"
+            android:contentDescription="@null" />
+    </LinearLayout>
+
+    <!-- Error message text -->
+    <TextView
+        android:id="@+id/pin_error"
+        android:layout_width="wrap_content"
+        android:layout_height="22dp"
+        android:text="@string/pin_error"
+        android:textColor="#FFFF6B6B"
+        android:textSize="13sp"
+        android:fontFamily="@string/font_body"
+        android:gravity="center"
+        android:visibility="invisible" />
+
+    <!-- 3x4 On-Screen Keypad -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:orientation="vertical">
+
+        <!-- Row 1: 1, 2, 3 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/key_1"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/pin_key_bg"
+                android:focusable="true"
+                android:clickable="true"
+                android:gravity="center"
+                android:text="1"
+                android:textColor="#FFFFFFFF"
+                android:textSize="22sp"
+                android:fontFamily="@string/font_medium" />
+
+            <TextView
+                android:id="@+id/key_2"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/pin_key_bg"
+                android:focusable="true"
+                android:clickable="true"
+                android:gravity="center"
+                android:text="2"
+                android:textColor="#FFFFFFFF"
+                android:textSize="22sp"
+                android:fontFamily="@string/font_medium" />
+
+            <TextView
+                android:id="@+id/key_3"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:background="@drawable/pin_key_bg"
+                android:focusable="true"
+                android:clickable="true"
+                android:gravity="center"
+                android:text="3"
+                android:textColor="#FFFFFFFF"
+                android:textSize="22sp"
+                android:fontFamily="@string/font_medium" />
+        </LinearLayout>
+
+        <!-- Row 2: 4, 5, 6 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/key_4"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/pin_key_bg"
+                android:focusable="true"
+                android:clickable="true"
+                android:gravity="center"
+                android:text="4"
+                android:textColor="#FFFFFFFF"
+                android:textSize="22sp"
+                android:fontFamily="@string/font_medium" />
+
+            <TextView
+                android:id="@+id/key_5"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/pin_key_bg"
+                android:focusable="true"
+                android:clickable="true"
+                android:gravity="center"
+                android:text="5"
+                android:textColor="#FFFFFFFF"
+                android:textSize="22sp"
+                android:fontFamily="@string/font_medium" />
+
+            <TextView
+                android:id="@+id/key_6"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:background="@drawable/pin_key_bg"
+                android:focusable="true"
+                android:clickable="true"
+                android:gravity="center"
+                android:text="6"
+                android:textColor="#FFFFFFFF"
+                android:textSize="22sp"
+                android:fontFamily="@string/font_medium" />
+        </LinearLayout>
+
+        <!-- Row 3: 7, 8, 9 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/key_7"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/pin_key_bg"
+                android:focusable="true"
+                android:clickable="true"
+                android:gravity="center"
+                android:text="7"
+                android:textColor="#FFFFFFFF"
+                android:textSize="22sp"
+                android:fontFamily="@string/font_medium" />
+
+            <TextView
+                android:id="@+id/key_8"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/pin_key_bg"
+                android:focusable="true"
+                android:clickable="true"
+                android:gravity="center"
+                android:text="8"
+                android:textColor="#FFFFFFFF"
+                android:textSize="22sp"
+                android:fontFamily="@string/font_medium" />
+
+            <TextView
+                android:id="@+id/key_9"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:background="@drawable/pin_key_bg"
+                android:focusable="true"
+                android:clickable="true"
+                android:gravity="center"
+                android:text="9"
+                android:textColor="#FFFFFFFF"
+                android:textSize="22sp"
+                android:fontFamily="@string/font_medium" />
+        </LinearLayout>
+
+        <!-- Row 4: Cancel, 0, Backspace -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/key_cancel"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/pin_key_bg"
+                android:focusable="true"
+                android:clickable="true"
+                android:gravity="center"
+                android:text="✕"
+                android:textColor="#B3FFFFFF"
+                android:textSize="18sp"
+                android:fontFamily="@string/font_medium" />
+
+            <TextView
+                android:id="@+id/key_0"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/pin_key_bg"
+                android:focusable="true"
+                android:clickable="true"
+                android:gravity="center"
+                android:text="0"
+                android:textColor="#FFFFFFFF"
+                android:textSize="22sp"
+                android:fontFamily="@string/font_medium" />
+
+            <TextView
+                android:id="@+id/key_backspace"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:background="@drawable/pin_key_bg"
+                android:focusable="true"
+                android:clickable="true"
+                android:gravity="center"
+                android:text="⌫"
+                android:textColor="#B3FFFFFF"
+                android:textSize="20sp"
+                android:fontFamily="@string/font_medium" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

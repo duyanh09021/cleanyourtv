@@ -84,6 +84,7 @@ final class AppLibraryDialog {
     private final boolean selectionMode;
     private final boolean animations;
     private final boolean rtl;
+    private final Set<String> pinProtectedApps;
     private TextView instructions;
     private int totalApps;
     final PopupWindow popup;
@@ -143,12 +144,13 @@ final class AppLibraryDialog {
         if (popup.isShowing()) popup.update(width, height);
     }
 
-    AppLibraryDialog(Activity activity, boolean animations, boolean reducedMotion, boolean selectionMode, Predicate<String> onHome, Runnable changed, Runnable dismissed) {
+    AppLibraryDialog(Activity activity, boolean animations, boolean reducedMotion, boolean selectionMode, Set<String> pinProtectedApps, Predicate<String> onHome, Runnable changed, Runnable dismissed) {
         this.activity = activity;
         this.animations = animations;
         this.rtl = activity.getResources().getBoolean(R.bool.rtl_app_grid);
         this.reducedMotion = reducedMotion;
         this.selectionMode = selectionMode;
+        this.pinProtectedApps = pinProtectedApps;
         this.onHome = onHome;
         this.changed = changed;
         this.dismissed = dismissed;
@@ -493,7 +495,19 @@ final class AppLibraryDialog {
     }
 
     private void open(ResolveInfo app) {
+        String pkg = app.activityInfo.packageName;
+        if (PinManager.isProtected(pinProtectedApps, pkg)) {
+            PinDialog.show(activity, label(app), () -> {
+                close();
+                doActualOpen(app);
+            });
+            return;
+        }
         close();
+        doActualOpen(app);
+    }
+
+    private void doActualOpen(ResolveInfo app) {
         Intent intent = new Intent(Intent.ACTION_MAIN).setComponent(
                 new ComponentName(app.activityInfo.packageName, app.activityInfo.name));
         // TV apps keep the leanback launch intent, so an app already running resumes instead of restarting.

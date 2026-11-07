@@ -5,6 +5,8 @@ import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -64,7 +66,7 @@ final class WallpaperPlayer {
     WallpaperPlayer(Context context, FrameLayout root, Config config) {
         this.root = root;
         files = new ArrayList<>(config.wallpapers);
-        interval = config.wallpaperRotationMinutes * 60_000L;
+        interval = config.wallpaperRotationIntervalMs;
         bitmapConfig = config.wallpaperTrueColor ? Bitmap.Config.ARGB_8888 : Bitmap.Config.RGB_565;
         // The dim is painted into the picture (decode), so no full-screen shade layer is drawn on every frame.
         dimColor = config.wallpaperDim > 0 ? (config.wallpaperDim * 255 / 100) << 24 : 0;
@@ -126,13 +128,31 @@ final class WallpaperPlayer {
         }
     }
 
+    private final Handler rotationHandler = new Handler(Looper.getMainLooper());
+    private final Runnable rotationTask = new Runnable() {
+        @Override
+        public void run() {
+            if (!active || closed) return;
+            nextWallpaper();
+        }
+    };
+
+    private void scheduleNextRotation() {
+        rotationHandler.removeCallbacks(rotationTask);
+        if (active && !closed && interval > 0 && files.size() > 1) {
+            rotationHandler.postDelayed(rotationTask, interval);
+        }
+    }
+
     void start() {
         active = true;
         update();
+        scheduleNextRotation();
     }
 
     void stop() {
         active = false;
+        rotationHandler.removeCallbacks(rotationTask);
     }
 
     /** The pictures the rotation picks from now: wallpaper_moods' group for the time of day, or the whole collection. */
@@ -149,7 +169,20 @@ final class WallpaperPlayer {
     void close() {
         active = false;
         closed = true;
+        rotationHandler.removeCallbacks(rotationTask);
         decoder.shutdownNow();
+    }
+
+    void nextWallpaper() {
+        if (!active || closed || loading || files.isEmpty()) return;
+        String previous = preferences.getString("image", "");
+        List<File> playable = playable();
+        File selected = WallpaperRotation.pick(playable, previous, order, random);
+        if (selected == null || selected.getName().equals(displayed)) {
+            scheduleNextRotation();
+            return;
+        }
+        loadWallpaper(selected, previous, 0);
     }
 
     void update() {
@@ -162,8 +195,14 @@ final class WallpaperPlayer {
         if (selected == null || WallpaperRotation.due(changed, System.currentTimeMillis(), interval)) {
             selected = WallpaperRotation.pick(playable, previous, order, random);
         }
-        if (selected == null || selected.getName().equals(displayed)) return;
-        File next = selected;
+        if (selected == null || selected.getName().equals(displayed)) {
+            scheduleNextRotation();
+            return;
+        }
+        loadWallpaper(selected, previous, changed);
+    }
+
+    private void loadWallpaper(File next, String previous, long changed) {
         loading = true;
         decoder.execute(() -> {
             Bitmap bitmap = decode(next);
@@ -186,6 +225,7 @@ final class WallpaperPlayer {
                     preferences.edit().putString("image", displayed)
                             .putLong("changed", System.currentTimeMillis()).apply();
                 }
+                scheduleNextRotation();
             });
         });
     }

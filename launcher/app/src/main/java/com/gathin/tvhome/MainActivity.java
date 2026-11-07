@@ -129,6 +129,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private String sourcePanelAction;
     private String sourcePanelExtra;
     private boolean coocaaSources;
+    private Set<String> pinProtectedApps;
 
     private AppAdapter adapter;
     private RecyclerView grid;
@@ -326,6 +327,27 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             if (appLibrary != null) appLibrary.refresh();
         }
     };
+    // When the TV enters standby or turns back on with an app in front, return to Home to enforce PIN protection.
+    private final IntentFilter screenFilter = new IntentFilter();
+    private final BroadcastReceiver screenReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent == null || !shouldReturnHomeOnScreenChange(stopped, intent.getAction())) return;
+            Intent home = new Intent(MainActivity.this, MainActivity.class)
+                    .setAction(Intent.ACTION_MAIN)
+                    .addCategory(Intent.CATEGORY_HOME)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            try {
+                startActivity(home);
+            } catch (Exception ignored) {
+            }
+        }
+    };
+
+    static boolean shouldReturnHomeOnScreenChange(boolean stopped, String action) {
+        // ponytail: returns to Home for all apps on sleep; add per-app whitelist if background audio/HDMI needs staying open.
+        return stopped && (Intent.ACTION_SCREEN_OFF.equals(action) || Intent.ACTION_SCREEN_ON.equals(action));
+    }
     // Right after boot the clock is often wrong until network time arrives; don't wait a minute to catch up.
     private final IntentFilter timeFilter = new IntentFilter(Intent.ACTION_TIME_CHANGED);
     private final BroadcastReceiver timeReceiver = new BroadcastReceiver() {
@@ -384,6 +406,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         sourcePanelAction = cfg.sourcePanelAction;
         sourcePanelExtra = cfg.sourcePanelExtra;
         coocaaSources = cfg.coocaaSources;
+        pinProtectedApps = cfg.pinProtectedApps;
 
         root = findViewById(R.id.root);
         root.setBackgroundColor(cfg.backgroundColor);
@@ -697,12 +720,16 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         packageFilter.addAction(Intent.ACTION_PACKAGE_CHANGED);
         packageFilter.addDataScheme("package");
         timeFilter.addAction(Intent.ACTION_TIMEZONE_CHANGED);
+        screenFilter.addAction(Intent.ACTION_SCREEN_OFF);
+        screenFilter.addAction(Intent.ACTION_SCREEN_ON);
         // Registered for the activity's whole life, not only while it is started: an app installed or updated while
         // another app is in front must still mark the tiles stale, or Home would have to rebuild on every return.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(packageReceiver, packageFilter, Context.RECEIVER_NOT_EXPORTED);
+            registerReceiver(screenReceiver, screenFilter, Context.RECEIVER_NOT_EXPORTED);
         } else {
             registerReceiver(packageReceiver, packageFilter);
+            registerReceiver(screenReceiver, screenFilter);
         }
 
         ConnectivityManager cm = getSystemService(ConnectivityManager.class);
@@ -1086,6 +1113,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     protected void onDestroy() {
         super.onDestroy();
         unregisterReceiver(packageReceiver);
+        unregisterReceiver(screenReceiver);
         wallpaperPlayer.close();
         ConnectivityManager cm = getSystemService(ConnectivityManager.class);
         TvInputManager tim = (TvInputManager) getSystemService(TV_INPUT_SERVICE);
@@ -1459,7 +1487,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (openPopup != null) openPopup.dismiss();
         libraryFocusPending = false;
         libraryFromTopBar = false;
-        appLibrary = new AppLibraryDialog(this, animations, reducedMotion, appLibrarySelection, adapter::containsPackage, () -> reloadApps(false), () -> {
+        appLibrary = new AppLibraryDialog(this, animations, reducedMotion, appLibrarySelection, pinProtectedApps, adapter::containsPackage, () -> reloadApps(false), () -> {
             appLibrary = null;
             openPopup = null;
             if (libraryFromTopBar) {
